@@ -1,0 +1,131 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Ticket | TicketFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#6366f1',
+                        dark: '#0f172a',
+                        darker: '#020617',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-darker text-white min-h-screen flex flex-col font-sans selection:bg-primary selection:text-white"
+    onload="loadTicketDetail()">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 glass border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
+                    <span class="text-3xl">🎟</span>
+                    <span
+                        class="font-bold text-2xl tracking-tight bg-gradient-to-r from-blue-400 to-indigo-500 text-transparent bg-clip-text">TicketFlow</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'my_tickets' %}" class="text-gray-400 hover:text-white transition-colors">Back to
+                        Tickets</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-28 pb-12 px-4 sm:px-6 lg:px-8 max-w-md mx-auto w-full flex items-center justify-center">
+
+        <div id="loader" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+
+        <div id="ticket-content" class="w-full hidden animate-fade-in-up">
+
+            <div class="bg-white text-darker rounded-3xl overflow-hidden shadow-2xl relative">
+                <!-- Top Section / Event Info -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                    <h1 id="event-title" class="text-2xl font-bold leading-tight mb-2">Loading...</h1>
+                    <p id="event-date" class="text-blue-100 text-sm font-medium">Loading date...</p>
+                </div>
+
+                <!-- QR Section -->
+                <div class="p-8 flex flex-col items-center justify-center bg-white relative">
+                    <!-- Punch holes -->
+                    <div class="absolute top-0 left-0 w-6 h-6 bg-darker rounded-full -ml-3 -mt-3"></div>
+                    <div class="absolute top-0 right-0 w-6 h-6 bg-darker rounded-full -mr-3 -mt-3"></div>
+
+                    <div
+                        class="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center mb-6 border-2 border-dashed border-gray-300 p-2">
+                        <img id="qr-code" src="" alt="QR Code"
+                            class="w-full h-full object-contain mix-blend-multiply opacity-50" />
+                    </div>
+
+                    <div class="text-center">
+                        <p class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-1">Ticket Code</p>
+                        <p id="ticket-code" class="text-2xl font-mono font-bold text-gray-900 tracking-wider">ABC-12345
+                        </p>
+                    </div>
+
+                    <div id="ticket-status-badge"
+                        class="mt-4 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wide">
+                        Valid Entry
+                    </div>
+                </div>
+
+                <!-- Bottom Info -->
+                <div class="bg-gray-50 p-6 border-t border-gray-200">
+                    <div class="flex justify-between items-center text-sm">
+                        <div class="text-gray-500">
+                            <p class="text-xs uppercase font-bold mb-1">Attendee</p>
+                            <p id="attendee-name" class="font-medium text-gray-900">Loading...</p>
+                        </div>
+                        <div class="text-right text-gray-500">
+                            <p class="text-xs uppercase font-bold mb-1">Type</p>
+                            <p id="ticket-type" class="font-medium text-gray-900">General</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <p class="text-center text-gray-500 text-sm mt-6">Show this QR code at the entrance.</p>
+
+        </div>
+
+    </main>
+
+    <script src="{% static 'js/config.js' %}"></script>
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/ticket_detail.js' %}"></script>
+</body>
+
+</html>

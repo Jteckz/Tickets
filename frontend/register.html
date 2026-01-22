@@ -1,0 +1,172 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - TicketFlow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#6366f1',
+            dark: '#0f172a',
+            darker: '#020617',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Custom select styling */
+    select option {
+      background-color: #020617;
+      color: white;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-darker text-white min-h-screen flex items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-hidden">
+
+  <!-- Background Elements -->
+  <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+    <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[128px]"></div>
+    <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[128px]"></div>
+  </div>
+
+  <div class="glass w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10 relative z-10 animate-fade-in-up">
+
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 text-transparent bg-clip-text mb-2">
+        Create Account</h1>
+      <p class="text-gray-400">Join TicketFlow today</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1" for="username">Username</label>
+        <input id="username" type="text"
+          class="w-full bg-darker/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+          placeholder="Choose a username" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1" for="email">Email</label>
+        <input id="email" type="email"
+          class="w-full bg-darker/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+          placeholder="john@example.com" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1" for="phone">Phone (Optional)</label>
+        <input id="phone" type="tel"
+          class="w-full bg-darker/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+          placeholder="+1234567890" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1" for="password">Password</label>
+        <input id="password" type="password"
+          class="w-full bg-darker/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+          placeholder="••••••••" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1" for="role">Role</label>
+        <div class="relative">
+          <select id="role"
+            class="w-full bg-darker/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer">
+            <option value="customer">User (Customer)</option>
+            <option value="provider">Provider (Organizer)</option>
+            <option value="staff">Staff (Validator)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="handleRegister()"
+        class="w-full mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5">
+        Register
+      </button>
+    </div>
+
+    <div class="mt-6 text-center text-sm">
+      <span class="text-gray-400">Already have an account?</span>
+      <a href="{% url 'login_page' %}" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition-colors">Sign
+        in</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="{% static 'js/config.js' %}"></script>
+  <script src="{% static 'js/api.js' %}"></script>
+  <script src="{% static 'js/auth.js' %}"></script>
+  <script>
+    async function handleRegister() {
+      const btn = document.querySelector('button[onclick="handleRegister()"]');
+      const originalText = btn.innerText;
+
+      btn.disabled = true;
+      btn.innerText = "Creating account...";
+      btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+      const payload = {
+        username: username.value,
+        email: email.value,
+        phone: phone.value,
+        password: password.value,
+        role: role.value,
+      };
+
+      if (!payload.username || !payload.password || !payload.email) {
+        alert("Please fill in all required fields");
+        btn.disabled = false;
+        btn.innerText = originalText;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        return;
+      }
+
+      try {
+        await register(payload);
+        // Register calls login, which handles redirect
+      } catch (err) {
+        console.error(err);
+        alert("Registration failed: " + (err.detail || JSON.stringify(err)));
+        btn.disabled = false;
+        btn.innerText = originalText;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    }
+    const username = document.getElementById("username");
+    const email = document.getElementById("email");
+    const phone = document.getElementById("phone");
+    const password = document.getElementById("password");
+    const role = document.getElementById("role");
+  </script>
+</body>
+
+</html>
