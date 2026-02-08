@@ -2,9 +2,16 @@ async function loadEventDetail() {
     requireAuth();
 
     // extract ID from URL: e.g. /events/3/
-    const path = window.location.pathname;
-    const match = path.match(/events\/(\d+)\//);
-    const eventId = match ? match[1] : null;
+    let eventId = window.djangoEventId;
+    if (!eventId) {
+        const path = window.location.pathname;
+        const match = path.match(/events\/(\d+)\/?/);
+        eventId = match ? match[1] : null;
+        if (!eventId) {
+             const params = new URLSearchParams(window.location.search);
+             eventId = params.get("id");
+        }
+    }
 
     if (!eventId) {
         alert("Invalid Event URL");

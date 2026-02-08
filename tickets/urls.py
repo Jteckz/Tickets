@@ -17,10 +17,15 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.http import HttpResponse
+
+def test_view(request):
+    return HttpResponse("OK")
 
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
+    path("test/", test_view),
 
     # FRONTEND PAGES at root
     path("", include("core.front_urls")),
@@ -31,3 +36,4 @@ urlpatterns = [
     # Language switching
     path("i18n/", include("django.conf.urls.i18n")),
 ]
+# Trigger reload

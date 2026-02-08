@@ -24,7 +24,7 @@ async function loadEvents() {
 }
 
 function viewEvent(id) {
-  window.location.href = `event-detail.html?id=${id}`;
+  window.location.href = `/events/${id}/`;
 }
 
 async function loadEventDetail() {

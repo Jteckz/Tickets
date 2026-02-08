@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: 2ni Tickets
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn projectname.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: tickets.settings
+      - key: ALLOWED_HOSTS
+        value: 2ni-tickets.onrender.com

@@ -41,6 +41,7 @@
 
 <body class="bg-darker text-white min-h-screen flex flex-col font-sans selection:bg-primary selection:text-white"
   onload="loadEventDetail()">
+  <script>window.djangoEventId = {{ event_id |default: "null" }};</script>
 
   <!-- Navbar -->
   <nav class="fixed w-full z-50 transition-all duration-300 glass border-b border-gray-800">
