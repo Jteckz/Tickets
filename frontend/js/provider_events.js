@@ -6,7 +6,23 @@ async function loadProviderEvents() {
         return;
     }
 
+    bindCreateButton();
     await fetchMyEvents();
+}
+
+function bindCreateButton() {
+    const createBtn = document.getElementById("create-btn");
+    if (!createBtn) {
+        console.warn("Publish Event button not found.");
+        return;
+    }
+
+    if (createBtn.dataset.listenerBound === "1") {
+        return;
+    }
+
+    createBtn.addEventListener("click", createEvent);
+    createBtn.dataset.listenerBound = "1";
 }
 
 async function fetchMyEvents() {
