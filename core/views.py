@@ -7,6 +7,7 @@ from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -67,8 +68,25 @@ class EventViewSet(viewsets.ModelViewSet):
             return EventCreateUpdateSerializer
         return EventSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        mine = self.request.query_params.get("mine")
+        if mine in {"1", "true", "True"} and self.request.user.is_authenticated:
+            return queryset.filter(provider=self.request.user)
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(provider=self.request.user)
+
+    def perform_update(self, serializer):
+        if serializer.instance.provider != self.request.user:
+            raise PermissionDenied("You can only update your own events.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.provider != self.request.user:
+            raise PermissionDenied("You can only delete your own events.")
+        instance.delete()
 
 
 class TicketViewSet(viewsets.ReadOnlyModelViewSet):

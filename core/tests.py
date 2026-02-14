@@ -45,6 +45,7 @@ class TicketPlatformApiTests(APITestCase):
                 "title": "Provider Event",
                 "description": "Details",
                 "venue": "Venue",
+                "date": "2026-12-31T20:00:00Z",
                 "tickets_available": 20,
                 "total_tickets": 20,
                 "ticket_price": "49.99",
@@ -54,6 +55,38 @@ class TicketPlatformApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Event.objects.filter(provider=self.provider).count(), 2)
+
+    def test_provider_cannot_delete_other_providers_event(self):
+        second_provider = User.objects.create_user(username="provider2", password="pass1234", role="provider")
+        other_event = Event.objects.create(
+            title="Other Provider Event",
+            venue="Other Venue",
+            tickets_available=10,
+            total_tickets=10,
+            ticket_price=10,
+            provider=second_provider,
+        )
+
+        self.client.force_authenticate(self.provider)
+        response = self.client.delete(reverse("events-detail", kwargs={"pk": other_event.id}))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_provider_can_filter_own_events(self):
+        second_provider = User.objects.create_user(username="provider3", password="pass1234", role="provider")
+        Event.objects.create(
+            title="Other Provider Event",
+            venue="Other Venue",
+            tickets_available=10,
+            total_tickets=10,
+            ticket_price=10,
+            provider=second_provider,
+        )
+
+        self.client.force_authenticate(self.provider)
+        response = self.client.get(reverse("events-list") + "?mine=1")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["provider"], self.provider.id)
 
     def test_customer_cannot_create_event(self):
         self.client.force_authenticate(self.customer)

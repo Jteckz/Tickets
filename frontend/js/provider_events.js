@@ -18,10 +18,7 @@ async function fetchMyEvents() {
     container.innerHTML = "";
 
     try {
-        const events = await apiGet("/events/"); // This fetches ALL events. Better API design would be /events/my/ or filtering.
-        // filtering client side as per previous code legacy
-        const user = getUser();
-        const myEvents = events.filter(e => e.provider === user.id);
+        const myEvents = await apiGet("/events/?mine=1");
 
         loader.classList.add("hidden");
 
@@ -47,7 +44,7 @@ function renderEventRow(event) {
             <h3 class="font-bold text-lg text-white">${event.title}</h3>
             <div class="text-sm text-gray-400 flex flex-wrap gap-4 mt-1">
                 <span>${new Date(event.date).toLocaleDateString()}</span>
-                <span>$${event.price}</span>
+                <span>$${event.ticket_price}</span>
                 <span class="${event.tickets_available > 0 ? 'text-green-400' : 'text-red-400'}">
                     ${event.tickets_available} / ${event.total_tickets} left
                 </span>
@@ -66,13 +63,13 @@ function renderEventRow(event) {
 async function createEvent() {
     const btn = document.getElementById("create-btn");
     const title = document.getElementById("title").value;
-    const location = document.getElementById("location").value;
+    const venue = document.getElementById("location").value;
     const date = document.getElementById("date").value;
-    const price = document.getElementById("price").value;
+    const ticket_price = document.getElementById("price").value;
     const total_tickets = document.getElementById("total_tickets").value;
     const description = document.getElementById("description").value;
 
-    if (!title || !date || !price || !total_tickets) {
+    if (!title || !venue || !date || !ticket_price || !total_tickets) {
         alert("Please fill in all required fields.");
         return;
     }
@@ -82,10 +79,11 @@ async function createEvent() {
 
     const payload = {
         title,
-        location,
+        venue,
         date,
-        price,
+        ticket_price,
         total_tickets,
+        tickets_available: total_tickets,
         description,
         // provider: user.id // Backend sets this from request.user
     };
@@ -121,16 +119,21 @@ async function deactivateEvent(id) {
         // api.js apiPost helper does not support DELETE without modification or using fetch directly
         // I need to use fetch or update api.js. I'll use fetch directly for now using headers from api.js
 
-        await fetch(API_BASE + `/events/${id}/`, {
+        const res = await fetch(API_BASE + `/events/${id}/`, {
             method: "DELETE",
             headers: getHeaders(true)
         });
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || "Delete failed.");
+        }
 
         // If successful
         fetchMyEvents();
 
     } catch (err) {
         console.error(err);
-        alert("Delete failed.");
+        alert(err.message || "Delete failed.");
     }
 }
