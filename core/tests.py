@@ -102,6 +102,15 @@ class TicketPlatformApiTests(APITestCase):
         self.event.refresh_from_db()
         self.assertEqual(self.event.tickets_available, 4)
 
+    def test_customer_can_download_own_ticket_qr(self):
+        self.client.force_authenticate(self.customer)
+        booking = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
+        ticket_id = booking.data["id"]
+
+        response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket_id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("image", response["Content-Type"])
+
     def test_only_staff_can_verify_ticket(self):
         ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
 
