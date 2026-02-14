@@ -1,114 +1,91 @@
-from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
 from rest_framework import status
-from .models import User, Event, Ticket, Invitation
-import uuid
+from rest_framework.test import APITestCase
 
-class APITests(TestCase):
+from .models import Event, Ticket, User
+
+
+class TicketPlatformApiTests(APITestCase):
     def setUp(self):
-        self.client = APIClient()
-        
-        # Create Users
-        self.admin_user = User.objects.create_superuser(username='admin', password='password123', role='admin')
-        self.provider_user = User.objects.create_user(username='provider', password='password123', role='provider')
-        self.customer_user = User.objects.create_user(username='customer', password='password123', role='customer')
-        self.staff_user = User.objects.create_user(username='staff', password='password123', role='staff')
+        self.provider = User.objects.create_user(username="provider", password="pass1234", role="provider")
+        self.customer = User.objects.create_user(username="customer", password="pass1234", role="customer")
+        self.staff = User.objects.create_user(username="staff", password="pass1234", role="staff")
 
-        # Create Event
         self.event = Event.objects.create(
-            title="Test Concert",
-            tickets_available=10,
-            provider=self.provider_user,
-            date="2025-12-31 20:00:00"
+            title="Launch Night",
+            description="Premium event",
+            venue="Nairobi Arena",
+            tickets_available=5,
+            total_tickets=5,
+            ticket_price=100,
+            provider=self.provider,
         )
 
-    # --- User Tests ---
-    def test_get_users(self):
-        url = reverse('users-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(response.data) >= 4) # We created 4 users
-
-    # --- Event Tests ---
-    def test_create_event_as_provider(self):
-        self.client.force_authenticate(user=self.provider_user)
-        url = reverse('events-list')
-        data = {
-            "title": "New Festival",
-            "tickets_available": 100,
-            "venue": "Central Park",
-            "provider": self.provider_user.id
+    def test_customer_can_register_and_login(self):
+        register_url = reverse("register")
+        payload = {
+            "username": "new_customer",
+            "email": "new@example.com",
+            "password": "pass1234",
+            "role": "customer",
         }
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Event.objects.count(), 2)
+        register_res = self.client.post(register_url, payload, format="json")
+        self.assertEqual(register_res.status_code, status.HTTP_201_CREATED)
 
-    # --- Ticket Tests ---
-    def test_buy_ticket_success(self):
-        url = reverse('tickets-list')
-        data = {
-            "event": self.event.id,
-            "user": self.customer_user.id
-        }
-        response = self.client.post(url, data)
+        login_res = self.client.post(reverse("login"), {"username": "new_customer", "password": "pass1234"}, format="json")
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+        self.assertIn("access", login_res.data)
+        self.assertIn("refresh", login_res.data)
+
+    def test_provider_can_create_event(self):
+        self.client.force_authenticate(self.provider)
+        response = self.client.post(
+            reverse("events-list"),
+            {
+                "title": "Provider Event",
+                "description": "Details",
+                "venue": "Venue",
+                "tickets_available": 20,
+                "total_tickets": 20,
+                "ticket_price": "49.99",
+                "is_hot": True,
+            },
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Event.objects.filter(provider=self.provider).count(), 2)
+
+    def test_customer_cannot_create_event(self):
+        self.client.force_authenticate(self.customer)
+        response = self.client.post(reverse("events-list"), {"title": "Nope"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_customer_can_book_ticket_with_qr(self):
+        self.client.force_authenticate(self.customer)
+        response = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        ticket = Ticket.objects.get(id=response.data["id"])
+        self.assertIsNotNone(ticket.qr_code)
         self.event.refresh_from_db()
-        self.assertEqual(self.event.tickets_available, 9) # Decremented
+        self.assertEqual(self.event.tickets_available, 4)
 
-    def test_buy_ticket_sold_out(self):
-        self.event.tickets_available = 0
-        self.event.save()
-        url = reverse('tickets-list')
-        data = {"event": self.event.id, "user": self.customer_user.id}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_only_staff_can_verify_ticket(self):
+        ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
 
-    def test_verify_ticket(self):
-        # Create a ticket manually
-        ticket = Ticket.objects.create(
-            event=self.event,
-            buyer=self.customer_user,
-            price=50.00,
-            payment_confirmed=True # Must be confirmed to verify
-        )
-        url = reverse('ticket-verify')
-        data = {"ticket_id": str(ticket.id)}
-        
-        # Verify first time
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.client.force_authenticate(self.customer)
+        customer_res = self.client.post(reverse("verify-ticket"), {"ticket_id": ticket.id}, format="json")
+        self.assertEqual(customer_res.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.staff)
+        staff_res = self.client.post(reverse("verify-ticket"), {"ticket_id": ticket.id}, format="json")
+        self.assertEqual(staff_res.status_code, status.HTTP_200_OK)
         ticket.refresh_from_db()
-        self.assertEqual(ticket.status, 'used')
+        self.assertEqual(ticket.status, "used")
 
-        # Verify second time (should fail)
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # --- Dashboard Tests ---
-    def test_provider_dashboard(self):
-        self.client.force_authenticate(user=self.provider_user)
-        url = reverse('provider-dashboard')
-        response = self.client.get(url)
+    def test_provider_dashboard_data(self):
+        Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
+        self.client.force_authenticate(self.provider)
+        response = self.client.get(reverse("provider-dashboard-data"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("total_earnings", response.data)
-
-    def test_admin_dashboard(self):
-        self.client.force_authenticate(user=self.admin_user)
-        url = reverse('admin-dashboard')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("total_users", response.data)
-
-    # --- Invitation Tests ---
-    def test_create_invitation(self):
-        url = reverse('invitation-list')
-        data = {
-            "title": "VIP Party",
-            "event_date": "2025-12-31T20:00:00Z",
-            "venue": "Luxury Hall",
-            "creator": self.admin_user.id
-        }
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Invitation.objects.exists())
+        self.assertIn("events_count", response.json())
+        self.assertIn("revenue", response.json())

@@ -1,190 +1,169 @@
-from django.shortcuts import render, get_object_or_404
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
-from rest_framework import generics, viewsets
-from rest_framework_simplejwt.views import TokenObtainPairView
-from django.http import FileResponse
-from django.core.files.base import ContentFile
-from django.shortcuts import render
-import qrcode
 from io import BytesIO
+
+import qrcode
 from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import User, Event, Ticket, Invitation
+from .models import Event, Invitation, Ticket
+from .permissions import IsProvider, IsStaff
 from .serializer import (
-    UserSerializer, EventSerializer, TicketSerializer, InvitationSerializer,
-    RegisterSerializer, LoginSerializer,
+    EventCreateUpdateSerializer,
+    EventSerializer,
+    InvitationSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    TicketSerializer,
 )
-from .permissions import IsProvider, IsStaff, IsAdmin
 
-# ---------------- AUTH ----------------
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
+
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
 
-@api_view(["GET"])
+
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def profile_view(request):
-    return Response({
-        "id": request.user.id,
-        "username": request.user.username,
-        "email": request.user.email,
-        "role": request.user.role,
-    })
+    user = request.user
+    if request.method == "PATCH":
+        user.phone = request.data.get("phone", user.phone)
+        user.email = request.data.get("email", user.email)
+        user.save(update_fields=["phone", "email"])
 
-# ---------------- EVENTS ----------------
-class EventViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Event.objects.all().order_by("-date")
-    serializer_class = EventSerializer
-    permission_classes = [AllowAny]
+    return Response(
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "phone": user.phone,
+            "role": user.role,
+        }
+    )
 
-# ---------------- TICKETS ----------------
+
+class EventViewSet(viewsets.ModelViewSet):
+    queryset = Event.objects.select_related("provider").all().order_by("-date")
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            return [AllowAny()]
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsAuthenticated(), IsProvider()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return EventCreateUpdateSerializer
+        return EventSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(provider=self.request.user)
+
+
 class TicketViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Ticket.objects.filter(buyer=self.request.user)
+        return Ticket.objects.select_related("event").filter(buyer=self.request.user)
 
-# Reserve Ticket (Before Payment)
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def book_ticket(request, pk):
     event = get_object_or_404(Event, pk=pk)
     if event.tickets_available <= 0:
-        return Response({"error": "No tickets available"}, status=400)
+        return Response({"error": "No tickets available"}, status=status.HTTP_400_BAD_REQUEST)
 
     ticket = Ticket.objects.create(
         event=event,
         buyer=request.user,
         price=event.ticket_price,
-        payment_confirmed=False,
-        is_active=False
+        payment_confirmed=True,
+        is_active=True,
     )
-    event.tickets_available -= 1
-    event.save()
 
-    return Response({
-        "message": "Ticket reserved. Please complete payment.",
-        "ticket_id": ticket.id,
-        "price": ticket.price
-    }, status=201)
-
-# Confirm Payment & Generate QR
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def confirm_payment(request):
-    ticket_id = request.data.get("ticket_id")
-    payment_status = request.data.get("payment_status")  # 'success' or 'failed'
-
-    ticket = get_object_or_404(Ticket, id=ticket_id, buyer=request.user)
-
-    if payment_status != "success":
-        return Response({"error": "Payment failed"}, status=400)
-
-    ticket.payment_confirmed = True
-    ticket.is_active = True
-
-    # Generate QR code
     qr = qrcode.make(f"ticket:{ticket.id}")
     buffer = BytesIO()
     qr.save(buffer)
-    ticket.qr_code.save(f"ticket_{ticket.id}.png", ContentFile(buffer.getvalue()), save=True)
-    ticket.save()
+    ticket.qr_code.save(f"ticket_{ticket.id}.png", ContentFile(buffer.getvalue()), save=False)
+    ticket.save(update_fields=["qr_code", "payment_confirmed", "is_active"])
 
-    return Response({"message": "Payment confirmed, QR code generated!", "qr_code": ticket.qr_code.url})
+    event.tickets_available -= 1
+    event.save(update_fields=["tickets_available"])
 
-# Download Ticket
+    return Response(TicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def download_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id, buyer=request.user, is_active=True)
-
     if not ticket.qr_code:
-        return Response({"error": "QR code not available"}, status=400)
+        return Response({"error": "QR code not available"}, status=status.HTTP_400_BAD_REQUEST)
+    return FileResponse(
+        open(ticket.qr_code.path, "rb"),
+        as_attachment=True,
+        filename=f"{ticket.event.title}_ticket.png",
+    )
 
-    path = ticket.qr_code.path
-    return FileResponse(open(path, 'rb'), as_attachment=True, filename=f"{ticket.event.title}_ticket.png")
 
-# Verify Ticket (Staff)
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsStaff])
 def verify_ticket(request):
     ticket_id = request.data.get("ticket_id")
     if not ticket_id:
-        return Response({"error": "ticket_id is required"}, status=400)
+        return Response({"error": "ticket_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
     ticket = get_object_or_404(Ticket, id=ticket_id)
     if ticket.status == "used":
-        return Response({"error": "Ticket already used"}, status=400)
-    ticket.status = "used"
-    ticket.save()
-    return Response({
-        "message": "Ticket verified",
-        "ticket_id": str(ticket.id),
-        "event": ticket.event.title,
-    })
+        return Response({"error": "Ticket already used"}, status=status.HTTP_400_BAD_REQUEST)
+    if ticket.status == "cancelled":
+        return Response({"error": "Ticket is cancelled"}, status=status.HTTP_400_BAD_REQUEST)
 
-# ---------------- INVITATIONS ----------------
-class InvitationViewSet(viewsets.ReadOnlyModelViewSet):
+    ticket.status = "used"
+    ticket.save(update_fields=["status"])
+
+    return Response(
+        {
+            "message": "Ticket verified",
+            "ticket_id": str(ticket.id),
+            "event": ticket.event.title,
+        }
+    )
+
+
+class InvitationViewSet(viewsets.ModelViewSet):
     serializer_class = InvitationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Invitation.objects.filter(creator=self.request.user)
 
-# ---------------- DASHBOARDS ----------------
-@api_view(["GET"])
-@permission_classes([IsProvider])
-def provider_dashboard(request):
-    events = Event.objects.filter(provider=request.user)
-    tickets = Ticket.objects.filter(event__in=events)
-    context = {
-        "total_events": events.count(),
-        "tickets_issued": tickets.count(),
-        "tickets_used": tickets.filter(status="used").count(),
-    }
-    return render(request, "provider_dashboard.html", context)
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
 
 @api_view(["GET"])
-@permission_classes([IsStaff])
-def staff_dashboard(request):
-    tickets = Ticket.objects.all()
-    context = {
-        "total_tickets": tickets.count(),
-        "used": tickets.filter(status="used").count(),
-        "unused": tickets.filter(status="unused").count(),
-    }
-    return render(request, "staff_dashboard.html", context)
-
-@api_view(["GET"])
-@permission_classes([IsAdmin])
-def admin_dashboard(request):
-    context = {
-        "users": User.objects.count(),
-        "events": Event.objects.count(),
-        "tickets": Ticket.objects.count(),
-    }
-    return render(request, "dashboard.html", context)
-
+@permission_classes([IsAuthenticated, IsProvider])
 def provider_dashboard_data(request):
-    user = request.user
-
-    # Get all events for this provider
-    events = Event.objects.filter(provider=user).order_by('-date')
-    
-    # Tickets issued and used
+    events = Event.objects.filter(provider=request.user).order_by("-date")
     tickets = Ticket.objects.filter(event__in=events)
-    tickets_issued = tickets.count()
-    tickets_used = tickets.filter(status="used").count()
+    revenue = sum(t.provider_amount for t in tickets)
 
-    # Prepare events list for frontend
-    events_list = []
-    for ev in events:
-        events_list.append({
+    events_list = [
+        {
             "id": ev.id,
             "title": ev.title,
             "description": ev.description,
@@ -194,23 +173,31 @@ def provider_dashboard_data(request):
             "tickets_available": ev.tickets_available,
             "total_tickets": ev.total_tickets,
             "is_hot": ev.is_hot,
-        })
+        }
+        for ev in events
+    ]
 
-    return JsonResponse({
-        "total_events": events.count(),
-        "tickets_issued": tickets_issued,
-        "tickets_used": tickets_used,
-        "events": events_list,
-    })    
+    return JsonResponse(
+        {
+            "events_count": events.count(),
+            "tickets_sold": tickets.count(),
+            "tickets_used": tickets.filter(status="used").count(),
+            "revenue": float(revenue),
+            "events": events_list,
+        }
+    )
 
-# ---------------- API ROOT ----------------
+
 @api_view(["GET"])
 def api_root(request):
-    return Response({
-        "status": "TicketFlow API running",
-        "auth": "/api/auth/",
-        "events": "/api/events/",
-    })
+    return Response(
+        {
+            "status": "2NI Tickets API running",
+            "auth": "/api/auth/",
+            "events": "/api/events/",
+            "tickets": "/api/tickets/",
+        }
+    )
 
 
 def index_page(request):
@@ -225,19 +212,19 @@ def register_page(request):
     return render(request, "register.html")
 
 
-def customer_dashboard(request):
+def customer_dashboard_page(request):
     return render(request, "dashboard.html")
 
 
-def provider_dashboard(request):
+def provider_dashboard_page(request):
     return render(request, "provider_dashboard.html")
 
 
-def staff_dashboard(request):
+def staff_dashboard_page(request):
     return render(request, "staff_dashboard.html")
 
 
-def admin_dashboard(request):
+def admin_dashboard_page(request):
     return render(request, "admin-dashboard.html")
 
 
