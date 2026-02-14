@@ -65,9 +65,15 @@ async function bookTicket() {
     btn.classList.add("opacity-75");
 
     try {
+        codex/inspect-and-test-event-ticketing-features-f2k6cx
         const ticket = await apiPost(`/tickets/book/${window.currentEventId}/`, {});
         alert("Ticket booked successfully! Your QR ticket will open now.");
         window.location.href = `/tickets/${ticket.id}/?download=1`;
+
+        await apiPost(`/tickets/book/${window.currentEventId}/`, {});
+        alert("Ticket booked successfully!");
+        window.location.href = "/tickets/";
+        main
     } catch (err) {
         console.error(err);
         const msg = err.error || err.detail || JSON.stringify(err);

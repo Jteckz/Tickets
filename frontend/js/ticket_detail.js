@@ -62,11 +62,14 @@ function renderTicket(ticket) {
 
     const downloadBtn = document.getElementById("download-ticket-btn");
     downloadBtn.onclick = () => downloadTicket(ticket.id, event.title, verificationCode);
+    codex/inspect-and-test-event-ticketing-features-f2k6cx
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("download") === "1") {
         downloadTicket(ticket.id, event.title, verificationCode);
     }
+
+          main
 }
 
 async function downloadTicket(ticketId, eventTitle, verificationCode) {
