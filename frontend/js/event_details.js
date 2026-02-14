@@ -1,7 +1,6 @@
 async function loadEventDetail() {
     requireAuth();
 
-    // extract ID from URL: e.g. /events/3/
     let eventId = window.djangoEventId;
     if (!eventId) {
         const path = window.location.pathname;
@@ -19,15 +18,14 @@ async function loadEventDetail() {
         return;
     }
 
-    // save for booking
     window.currentEventId = eventId;
 
     try {
-        const event = await apiGet(`/events/${eventId}/`);
+        const event = await apiGet(`/events/${eventId}/`, false);
         renderEvent(event);
     } catch (err) {
         console.error(err);
-        alert("Control failed to load event.");
+        alert("Failed to load event.");
         window.location.href = "/dashboard/";
     }
 }
@@ -39,22 +37,15 @@ function renderEvent(event) {
     document.getElementById("event-title").textContent = event.title;
     document.getElementById("event-desc").textContent = event.description || "No description provided.";
 
-    // Formatting
     const date = new Date(event.date);
     document.getElementById("event-date").textContent = date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    document.getElementById("event-location").textContent = event.location || "Online / TBA";
-    document.getElementById("event-price").textContent = event.price ? `$${event.price}` : "Free";
-    document.getElementById("event-available").textContent = event.tickets_available || "Unlimited";
+    document.getElementById("event-location").textContent = event.venue || "Online / TBA";
+    document.getElementById("event-price").textContent = Number(event.ticket_price) > 0 ? `$${event.ticket_price}` : "Free";
+    document.getElementById("event-available").textContent = event.tickets_available ?? "Unlimited";
 
-    if (event.image) {
-        document.getElementById("event-image").src = event.image;
-    } else {
-        document.getElementById("event-image").src = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800&auto=format&fit=crop";
-    }
+    document.getElementById("event-image").src = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800&auto=format&fit=crop";
 
     const btn = document.getElementById("book-btn");
-
-    // Check ticket availability
     if (event.tickets_available !== null && event.tickets_available <= 0) {
         btn.disabled = true;
         btn.textContent = "Sold Out";
@@ -74,9 +65,9 @@ async function bookTicket() {
     btn.classList.add("opacity-75");
 
     try {
-        const res = await apiPost(`/tickets/book/${window.currentEventId}/`, {});
-        alert("Ticket booked successfully!");
-        window.location.href = "/tickets/"; // Redirect to my tickets
+        const ticket = await apiPost(`/tickets/book/${window.currentEventId}/`, {});
+        alert("Ticket booked successfully! Your QR ticket will open now.");
+        window.location.href = `/tickets/${ticket.id}/?download=1`;
     } catch (err) {
         console.error(err);
         const msg = err.error || err.detail || JSON.stringify(err);
