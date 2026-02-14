@@ -45,6 +45,27 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventCreateUpdateSerializer(EventSerializer):
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        total_tickets = attrs.get("total_tickets", getattr(self.instance, "total_tickets", 0))
+        tickets_available = attrs.get("tickets_available")
+
+        if total_tickets is not None and total_tickets < 0:
+            raise serializers.ValidationError({"total_tickets": "Total tickets must be 0 or greater."})
+
+        if tickets_available is None:
+            attrs["tickets_available"] = total_tickets
+        elif tickets_available < 0:
+            raise serializers.ValidationError({"tickets_available": "Available tickets must be 0 or greater."})
+
+        if attrs["tickets_available"] > total_tickets:
+            raise serializers.ValidationError(
+                {"tickets_available": "Available tickets cannot exceed total tickets."}
+            )
+
+        return attrs
+
     class Meta(EventSerializer.Meta):
         read_only_fields = ["provider", "sold_tickets"]
 

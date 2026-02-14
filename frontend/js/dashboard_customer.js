@@ -1,3 +1,6 @@
+let customerEventsPollingId = null;
+let customerEventsSyncListenerBound = false;
+
 async function loadCustomerDashboard() {
     requireAuth();
 
@@ -8,6 +11,19 @@ async function loadCustomerDashboard() {
     }
 
     await fetchEvents();
+
+    if (!customerEventsPollingId) {
+        customerEventsPollingId = setInterval(fetchEvents, 15000);
+    }
+
+    if (!customerEventsSyncListenerBound) {
+        window.addEventListener("storage", (e) => {
+            if (e.key === "events_last_published_at") {
+                fetchEvents();
+            }
+        });
+        customerEventsSyncListenerBound = true;
+    }
 }
 
 async function fetchEvents() {
@@ -16,7 +32,7 @@ async function fetchEvents() {
     const noEvents = document.getElementById("no-events");
 
     try {
-        const events = await apiGet("/events/");
+        const events = await apiGet(`/events/?_=${Date.now()}`);
         loader.classList.add("hidden");
 
         if (!events || events.length === 0) {

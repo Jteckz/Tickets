@@ -62,15 +62,26 @@ function renderEventRow(event) {
 
 async function createEvent() {
     const btn = document.getElementById("create-btn");
-    const title = document.getElementById("title").value;
-    const venue = document.getElementById("location").value;
-    const date = document.getElementById("date").value;
-    const ticket_price = document.getElementById("price").value;
-    const total_tickets = document.getElementById("total_tickets").value;
-    const description = document.getElementById("description").value;
+    const title = document.getElementById("title").value.trim();
+    const venue = document.getElementById("location").value.trim();
+    const rawDate = document.getElementById("date").value;
+    const ticket_price = Number(document.getElementById("price").value);
+    const total_tickets = Number(document.getElementById("total_tickets").value);
+    const description = document.getElementById("description").value.trim();
 
-    if (!title || !venue || !date || !ticket_price || !total_tickets) {
+    if (!title || !venue || !rawDate || Number.isNaN(ticket_price) || Number.isNaN(total_tickets)) {
         alert("Please fill in all required fields.");
+        return;
+    }
+
+    if (ticket_price < 0 || total_tickets <= 0) {
+        alert("Price must be at least 0 and total tickets must be greater than 0.");
+        return;
+    }
+
+    const dateObj = new Date(rawDate);
+    if (Number.isNaN(dateObj.getTime())) {
+        alert("Please provide a valid date and time.");
         return;
     }
 
@@ -80,7 +91,7 @@ async function createEvent() {
     const payload = {
         title,
         venue,
-        date,
+        date: dateObj.toISOString(),
         ticket_price,
         total_tickets,
         tickets_available: total_tickets,
@@ -101,6 +112,7 @@ async function createEvent() {
         document.getElementById("description").value = "";
 
         fetchMyEvents(); // Refresh list
+        localStorage.setItem("events_last_published_at", String(Date.now()));
 
     } catch (err) {
         console.error(err);
