@@ -1,3 +1,6 @@
+let eventsPollingId = null;
+let eventsSyncListenerBound = false;
+
 async function loadEvents() {
   requireAuth();
 
@@ -6,14 +9,16 @@ async function loadEvents() {
   const emptyState = document.getElementById("events-empty");
 
   try {
-    const events = await apiGet("/events/");
+    const events = await apiGet(`/events/?_=${Date.now()}`);
     loader.classList.add("hidden");
 
     if (!events || events.length === 0) {
       emptyState.classList.remove("hidden");
+      container.classList.add("hidden");
       return;
     }
 
+    emptyState.classList.add("hidden");
     container.classList.remove("hidden");
     container.innerHTML = events.map(renderEventCard).join("");
   } catch (error) {
@@ -21,6 +26,19 @@ async function loadEvents() {
     loader.classList.add("hidden");
     container.classList.remove("hidden");
     container.innerHTML = `<p class="text-red-400 col-span-full text-center">Failed to load events.</p>`;
+  }
+
+  if (!eventsPollingId) {
+    eventsPollingId = setInterval(loadEvents, 15000);
+  }
+
+  if (!eventsSyncListenerBound) {
+    window.addEventListener("storage", (e) => {
+      if (e.key === "events_last_published_at") {
+        loadEvents();
+      }
+    });
+    eventsSyncListenerBound = true;
   }
 }
 
