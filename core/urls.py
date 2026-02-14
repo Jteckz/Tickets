@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     RegisterView, LoginView, profile_view,
     EventViewSet, TicketViewSet, InvitationViewSet,
-    book_ticket, verify_ticket, api_root, register_page, provider_dashboard_data
+    book_ticket, verify_ticket, api_root, provider_dashboard_data, download_ticket
 
 )
 
@@ -21,6 +21,7 @@ urlpatterns = [
     path("profile/", profile_view, name="profile"),
     path("tickets/book/<int:pk>/", book_ticket, name="book-ticket"),
     path("tickets/verify/", verify_ticket, name="verify-ticket"),
+    path("tickets/download/<int:ticket_id>/", download_ticket, name="download-ticket"),
 
     # Include router URLs
     path("", include(router.urls)),
