@@ -27,13 +27,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("test/", test_view),
 
-    # FRONTEND PAGES at root
-    path("", include("core.front_urls")),
-
     # API routes under /api/
     path("api/", include("core.urls")),
-
-    # Language switching
-    path("i18n/", include("django.conf.urls.i18n")),
 ]
 # Trigger reload

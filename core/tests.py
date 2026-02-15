@@ -53,7 +53,7 @@ class TicketPlatformApiTests(APITestCase):
             },
             format="json",
         )
-        codex/inspect-and-test-event-ticketing-features-f2k6cx
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Event.objects.filter(provider=self.provider).count(), 2)
 
@@ -222,4 +222,4 @@ class TicketPlatformApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("events_count", response.json())
         self.assertIn("revenue", response.json())
-        main
+

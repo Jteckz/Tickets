@@ -51,7 +51,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -70,7 +70,7 @@ APPEND_SLASH=True
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "frontend"],  # <-- add frontend folder
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -117,7 +117,6 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.TemplateHTMLRenderer",  # allows HTML rendering
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
 }
@@ -147,9 +146,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "frontend"]
-TEMPLATES[0]['DIRS'] = [BASE_DIR / "frontend"]
-# fix: serve CSS/JS from frontend folder
+
 
 # Media files (optional, if needed)
 MEDIA_URL = "/media/"

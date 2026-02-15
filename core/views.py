@@ -4,7 +4,7 @@ import qrcode
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.http import FileResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -25,7 +25,7 @@ from .serializer import (
 
 
 class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
+    serializer_class = RegisterSerializer 
     permission_classes = [AllowAny]
 
 
@@ -87,6 +87,7 @@ class EventViewSet(viewsets.ModelViewSet):
         if instance.provider != self.request.user:
             raise PermissionDenied("You can only delete your own events.")
         instance.delete()
+
 
 
 class TicketViewSet(viewsets.ReadOnlyModelViewSet):
@@ -218,58 +219,3 @@ def api_root(request):
     )
 
 
-def index_page(request):
-    return render(request, "index.html")
-
-
-def login_page(request):
-    return render(request, "login.html")
-
-
-def register_page(request):
-    return render(request, "register.html")
-
-
-def customer_dashboard_page(request):
-    return render(request, "dashboard.html")
-
-
-def provider_dashboard_page(request):
-    return render(request, "provider_dashboard.html")
-
-
-def staff_dashboard_page(request):
-    return render(request, "staff_dashboard.html")
-
-
-def admin_dashboard_page(request):
-    return render(request, "admin-dashboard.html")
-
-
-def events_page(request):
-    return render(request, "events.html")
-
-
-def event_detail_page(request, event_id):
-    return render(request, "event-details.html", {"event_id": event_id})
-
-
-def my_tickets_page(request):
-    return render(request, "my-tickets.html")
-
-
-def ticket_detail_page(request, ticket_id):
-    return render(request, "ticket-detail.html", {"ticket_id": ticket_id})
-
-
-def profile_page(request):
-    return render(request, "profile.html")
-
-
-def provider_events_page(request):
-    return render(request, "provider/manage_events.html")
-
-
-@login_required
-def staff_scanner_page(request):
-    return render(request, "staff/scanner.html")

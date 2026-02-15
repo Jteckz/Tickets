@@ -1,116 +1,92 @@
-# 2NI Tickets
+# TicketFlow Backend API
 
-A comprehensive, full-featured ticket management system designed to facilitate seamless event creation, secure ticket purchasing, and digital invitation management. Built with Django and modern frontend technologies, **2NI Tickets** offers a robust platform for event organizers and attendees alike.
+Backend API service for the TicketFlow application, built with Django and Django REST Framework.
 
-## 🚀 Features
+## Features
 
-### 🎭 User Roles & Dashboards
-The platform supports multiple user roles, each with a dedicated dashboard and specific permissions:
--   **Admin**: Full control over users, events, and system settings.
--   **Staff**: Validate tickets and assist with event management.
--   **Provider**: Create and manage events, track ticket sales, and view revenue.
--   **Customer**: Browse events, purchase tickets, and manage bookings.
+- **RESTful API**: comprehensive endpoints for events, tickets, users, and invitations.
+- **Authentication**: JWT-based authentication (simplejwt).
+- **Role-Based Access**: Granular permissions for Customers, Providers, Staff, and Admin.
+- **Event Management**: Create, update, and manage events.
+- **Ticketing System**: Book tickets, generate QR codes, and verify tickets.
+- **Provider Dashboard**: Revenue tracking and event analytics.
 
-### 📅 Event Management
--   **Create & Customize**: Providers can create detailed event listings with descriptions, venues, dates, and ticket prices.
--   **Management**: Edit event details, track available tickets, and manage event status.
+## Tech Stack
 
-### 🎟️ Secure Ticketing System
--   **Purchase**: Seamless ticket purchasing flow for customers.
--   **QR Code Generation**: Every ticket generates a unique QR code for secure validation.
--   **Validation**: Staff can scan and validate tickets at the event venue.
+- **Python 3.10+**
+- **Django 5.x**
+- **Django REST Framework**
+- **PostgreSQL** (Production) / **SQLite** (Dev)
 
-### 📩 Digital Invitations
--   **Custom Invites**: Users can create and send digital invitations for private events.
--   **Tracking**: Track the status of sent invitations (Active/Used).
--   **QR Integration**: Invitations also include QR codes for easy check-in.
+## Installation
 
-### 🌍 Internationalization (i18n)
--   **Multi-Language Support**: Fully localized for **English** and **Swahili**.
--   **Language Switcher**: Easily toggle between languages via the UI.
-
-### 🔒 Security & Performance
--   **Authentication**: Secure JWT-based authentication.
--   **Role-Based Access Control**: Strict permission checks for API endpoints and views.
--   **Scalable Database**: Powered by PostgreSQL for reliable data management.
-
-## 🛠️ Technology Stack
-
--   **Backend**: Python 3.10+, Django 5.2, Django REST Framework (DRF)
--   **Frontend**: HTML5, TailwindCSS, JavaScript (Vanilla)
--   **Database**: PostgreSQL
--   **Utilities**: `gunicorn`, `whitenoise`, `python-dotenv`
-
-## 📋 Prerequisites
-
-Before you begin, ensure you have the following installed:
--   **Python 3.10** or higher
--   **PostgreSQL** database
--   **Git**
-
-## ⚙️ Installation & Setup
-
-1.  **Clone the Repository**
+1.  **Clone the repository:**
     ```bash
     git clone <repository-url>
-    cd ticket-app
+    cd ticket-app-backend
     ```
 
-2.  **Set Up a Virtual Environment**
+2.  **Create a virtual environment:**
     ```bash
     python -m venv venv
+    
     # Windows
-    venv\Scripts\activate
-    # macOS/Linux
+    .\venv\Scripts\activate
+    
+    # Linux/Mac
     source venv/bin/activate
     ```
 
-3.  **Install Dependencies**
+3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configure Environment Variables**
-    Create a `.env` file in the root directory and add the following configurations:
-    ```env
-    SECRET_KEY=your_secret_key
-    DEBUG=True
-    ALLOWED_HOSTS=localhost,127.0.0.1
-    DB_NAME=ticketflow_db
-    DB_USER=postgres
-    DB_PASSWORD=your_password
-    DB_HOST=localhost
-    DB_PORT=5432
-    ```
+4.  **Configure Environment Variables:**
+    - Copy `.env.example` to `.env`:
+        ```bash
+        cp .env.example .env
+        # or on Windows
+        copy .env.example .env
+        ```
+    - Update `.env` with your database credentials and secret key.
 
-5.  **Apply Database Migrations**
+5.  **Run Migrations:**
     ```bash
     python manage.py migrate
     ```
 
-6.  **Create a Superuser**
+6.  **Create Superuser:**
     ```bash
     python manage.py createsuperuser
     ```
 
-7.  **Run the Development Server**
+7.  **Run the Server:**
     ```bash
     python manage.py runserver
     ```
 
-    Access the application at `http://127.0.0.1:8000/`.
+## API Documentation
 
-## 📖 API Documentation
+The API is available at `http://127.0.0.1:8000/api/`.
 
-The project includes a comprehensive REST API. Once the server is running, you can explore the endpoints:
+### Key Endpoints
 
--   **Base API URL**: `/api/`
--   **Authentication**: `/api/token/` (Obtain JWT Pair)
--   **Users**: `/api/users/`, `/api/profile/`
--   **Events**: `/api/events/`
--   **Tickets**: `/api/tickets/`
--   **Invitations**: `/api/invitations/`
+-   **Auth**:
+    -   `POST /api/auth/register/` - Register new user
+    -   `POST /api/auth/login/` - Login and get JWT pair
+    -   `POST /api/auth/token/refresh/` - Refresh access token
 
-## 📄 License
+-   **Events**:
+    -   `GET /api/events/` - List all events
+    -   `POST /api/events/` - Create event (Provider only)
+    -   `GET /api/events/{id}/` - Retrieve event details
 
-This project is licensed under the MIT License.
+-   **Tickets**:
+    -   `POST /api/tickets/book/{event_id}/` - Book a ticket
+    -   `GET /api/tickets/my/` - List my tickets
+    -   `POST /api/tickets/verify/` - Verify ticket (Staff only)
+
+## License
+
+[MIT](LICENSE)
