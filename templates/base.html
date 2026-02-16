@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TicketFlow{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#0f172a',
+            darker: '#020617',
+            primary: '#3b82f6',
+            secondary: '#6366f1',
+            glass: 'rgba(255,255,255,0.05)',
+            'border-glass': 'rgba(255,255,255,0.1)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWix+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8g4aQfF8QY9N4i5VgS0bM5f5mY9mQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{% static 'frontend/css/styles.css' %}" />
+</head>
+<body class="min-h-screen bg-background text-slate-100">
+  <div id="navbar-root"></div>
+  <main class="px-4 pb-10 pt-28 md:px-8">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}TicketFlow | Events{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-6xl">
+  <div class="mb-5">
+    <h1 class="text-3xl font-semibold">Events</h1>
+    <p class="text-slate-300">Discover and book upcoming experiences.</p>
+    <p id="events-message"></p>
+  </div>
+  <div id="events-grid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'frontend/js/events.js' %}"></script>
+{% endblock %}

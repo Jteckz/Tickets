@@ -1,0 +1,39 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}TicketFlow | Provider Dashboard{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-6xl space-y-6">
+  <h1 class="text-3xl font-semibold">Provider Dashboard</h1>
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="glass p-5"><p class="text-sm text-slate-300">Total Events</p><p id="events-count" class="text-2xl font-semibold">0</p></div>
+    <div class="glass p-5"><p class="text-sm text-slate-300">Tickets Sold</p><p id="tickets-sold" class="text-2xl font-semibold">0</p></div>
+    <div class="glass p-5"><p class="text-sm text-slate-300">Revenue</p><p id="revenue" class="text-2xl font-semibold">$0.00</p></div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="glass p-6">
+      <h2 id="form-title" class="mb-4 text-xl font-semibold">Create Event</h2>
+      <form id="provider-form" class="space-y-3">
+        <input type="hidden" id="event-id" name="event_id" />
+        <input class="input-control" name="title" placeholder="Event title" required />
+        <textarea class="input-control" name="description" placeholder="Description"></textarea>
+        <input class="input-control" type="datetime-local" name="date" required />
+        <input class="input-control" name="venue" placeholder="Venue" required />
+        <div class="grid grid-cols-3 gap-2">
+          <input class="input-control" type="number" min="0" step="0.01" name="ticket_price" placeholder="Price" required />
+          <input class="input-control" type="number" min="0" name="total_tickets" placeholder="Total" required />
+          <input class="input-control" type="number" min="0" name="tickets_available" placeholder="Available" required />
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_hot" /> Mark as Hot Event</label>
+        <button type="submit" class="btn-primary w-full">Save Event</button>
+      </form>
+      <p id="provider-message"></p>
+    </div>
+
+    <div class="space-y-3" id="provider-events"></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'frontend/js/provider.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}TicketFlow | Register{% endblock %}
+{% block content %}
+<section class="mx-auto flex max-w-lg justify-center">
+  <div class="glass w-full p-8 fade-in">
+    <h1 class="text-2xl font-semibold">Create account</h1>
+    <p class="mt-2 text-sm text-slate-300">Join TicketFlow and start booking premium events.</p>
+
+    <form id="register-form" class="mt-6 grid gap-4 md:grid-cols-2">
+      <div class="md:col-span-1">
+        <label for="username" class="mb-1 block text-sm">Username</label>
+        <input id="username" name="username" class="input-control" required />
+      </div>
+      <div class="md:col-span-1">
+        <label for="phone" class="mb-1 block text-sm">Phone</label>
+        <input id="phone" name="phone" class="input-control" />
+      </div>
+      <div class="md:col-span-2">
+        <label for="email" class="mb-1 block text-sm">Email</label>
+        <input id="email" name="email" type="email" class="input-control" required />
+      </div>
+      <div class="md:col-span-1">
+        <label for="role" class="mb-1 block text-sm">Role</label>
+        <select id="role" name="role" class="input-control">
+          <option value="customer">Customer</option>
+          <option value="provider">Provider</option>
+          <option value="staff">Staff</option>
+        </select>
+      </div>
+      <div class="md:col-span-1">
+        <label for="password" class="mb-1 block text-sm">Password</label>
+        <input id="password" name="password" type="password" class="input-control" required />
+      </div>
+      <div class="md:col-span-2">
+        <button type="submit" class="btn-primary w-full">Register</button>
+        <p id="auth-message"></p>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'frontend/js/auth-pages.js' %}"></script>
+{% endblock %}
