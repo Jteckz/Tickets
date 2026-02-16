@@ -41,24 +41,32 @@ async function submitEventForm(event) {
   event.preventDefault();
   clearMessage('provider-message');
 
-  const form = event.target;
+  const form = event.currentTarget;
+  const getTrimmedValue = (name) => (form.elements.namedItem(name)?.value || '').trim();
+  const getNumberValue = (name) => Number(form.elements.namedItem(name)?.value);
+
   const payload = {
-    title: form.title.value.trim(),
-    description: form.description.value.trim(),
-    date: form.date.value,
-    venue: form.venue.value.trim(),
-    ticket_price: Number(form.ticket_price.value),
-    total_tickets: Number(form.total_tickets.value),
-    tickets_available: Number(form.tickets_available.value),
-    is_hot: form.is_hot.checked,
+    title: getTrimmedValue('title'),
+    description: getTrimmedValue('description'),
+    date: form.elements.namedItem('date')?.value || '',
+    venue: getTrimmedValue('venue'),
+    ticket_price: getNumberValue('ticket_price'),
+    total_tickets: getNumberValue('total_tickets'),
+    tickets_available: getNumberValue('tickets_available'),
+    is_hot: Boolean(form.elements.namedItem('is_hot')?.checked),
   };
 
-  if (!payload.title || !payload.date || !payload.venue) {
+  const hasMissingRequiredText = !payload.title || !payload.date || !payload.venue;
+  const hasInvalidNumbers = [payload.ticket_price, payload.total_tickets, payload.tickets_available].some(
+    (value) => Number.isNaN(value) || value < 0
+  );
+
+  if (hasMissingRequiredText || hasInvalidNumbers) {
     showMessage('provider-message', 'Please complete all required fields.');
     return;
   }
 
-  const eventId = form.event_id.value;
+  const eventId = form.elements.namedItem('event_id')?.value || '';
   const submitBtn = form.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Saving...';
@@ -72,7 +80,10 @@ async function submitEventForm(event) {
       showMessage('provider-message', 'Event created successfully.', 'success');
     }
     form.reset();
-    form.event_id.value = '';
+    const eventIdField = form.elements.namedItem('event_id');
+    if (eventIdField) {
+      eventIdField.value = '';
+    }
     document.getElementById('form-title').textContent = 'Create Event';
     await loadProviderDashboard();
   } catch (error) {
