@@ -17,15 +17,19 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from django.http import HttpResponse
-
-def test_view(request):
-    return HttpResponse("OK")
+from core import frontend_views
 
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
-    path("test/", test_view),
+    path("", frontend_views.index, name="index"),
+    path("login/", frontend_views.login_page, name="login-page"),
+    path("register/", frontend_views.register_page, name="register-page"),
+    path("dashboard/", frontend_views.dashboard, name="dashboard"),
+    path("events/", frontend_views.events, name="events-page"),
+    path("tickets/", frontend_views.tickets, name="tickets-page"),
+    path("provider-dashboard/", frontend_views.provider_dashboard, name="provider-dashboard-page"),
+    path("scanner/", frontend_views.scanner, name="scanner-page"),
 
     # API routes under /api/
     path("api/", include("core.urls")),

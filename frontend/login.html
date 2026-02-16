@@ -1,0 +1,27 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}TicketFlow | Login{% endblock %}
+{% block content %}
+<section class="mx-auto flex max-w-md justify-center">
+  <div class="glass w-full p-8 fade-in">
+    <h1 class="text-2xl font-semibold">Welcome back</h1>
+    <p class="mt-2 text-sm text-slate-300">Login to access your dashboard and tickets.</p>
+
+    <form id="login-form" class="mt-6 space-y-4">
+      <div>
+        <label for="username" class="mb-1 block text-sm">Username</label>
+        <input id="username" name="username" class="input-control" placeholder="your_username" required />
+      </div>
+      <div>
+        <label for="password" class="mb-1 block text-sm">Password</label>
+        <input id="password" name="password" type="password" class="input-control" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn-primary w-full">Login</button>
+      <p id="auth-message"></p>
+    </form>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'frontend/js/auth-pages.js' %}"></script>
+{% endblock %}
