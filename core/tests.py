@@ -108,8 +108,13 @@ class TicketPlatformApiTests(APITestCase):
         booking = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
         ticket_id = booking.data["id"]
 
+        self.client.force_authenticate(user=None)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket_id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        codex/fix-401-error-for-pdf-download
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn('attachment; filename="ticket_', response["Content-Disposition"])
+
         self.assertIn("application/pdf", response["Content-Type"])
 
 
@@ -130,6 +135,7 @@ class TicketPlatformApiTests(APITestCase):
         self.client.force_authenticate(self.customer)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket.id}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        main
 
     def test_only_staff_can_verify_ticket(self):
         ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
@@ -217,9 +223,15 @@ class TicketPlatformApiTests(APITestCase):
         booking = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
         ticket_id = booking.data["id"]
 
+        self.client.force_authenticate(user=None)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket_id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        codex/fix-401-error-for-pdf-download
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn('attachment; filename="ticket_', response["Content-Disposition"])
+
         self.assertIn("application/pdf", response["Content-Type"])
+        main
 
     def test_only_staff_can_verify_ticket(self):
         ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
