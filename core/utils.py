@@ -1,6 +1,8 @@
 import qrcode
 from io import BytesIO
 from django.core.files import File
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 def generate_ticket_qr(ticket):
@@ -32,16 +34,32 @@ def generate_invitation_qr(invitation):
 
 def generate_ticket_pdf(ticket):
     buffer = BytesIO()
-    p = canvas.Canvas(buffer)
+    confirmation_id = f"TKT-{ticket.id:06d}-{ticket.created_at.strftime('%Y%m%d')}"
+    qr = qrcode.make(confirmation_id)
+    qr_buffer = BytesIO()
+    qr.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
 
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, 750, "EVENT TICKET")
+    p.drawString(50, height - 80, "EVENT INVITATION")
 
     p.setFont("Helvetica", 12)
-    p.drawString(100, 720, f"Ticket ID: {ticket.id}")
-    p.drawString(100, 700, f"Event: {ticket.event.title}")
-    p.drawString(100, 680, f"Date: {ticket.event.date}")
-    p.drawString(100, 660, f"Venue: {ticket.event.venue}")
+    p.drawString(50, height - 120, f"Event: {ticket.event.title}")
+    p.drawString(50, height - 145, "Description:")
+
+    text = p.beginText(50, height - 165)
+    text.setFont("Helvetica", 11)
+    description = (ticket.event.description or "No event description available.").strip()
+    for line in description.splitlines() or [description]:
+        text.textLine(line)
+    p.drawText(text)
+
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, 120, f"Confirmation ID: {confirmation_id}")
+    p.drawImage(ImageReader(qr_buffer), width - 170, 50, width=120, height=120)
 
     p.showPage()
     p.save()

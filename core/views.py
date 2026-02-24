@@ -22,6 +22,7 @@ from .serializer import (
     RegisterSerializer,
     TicketSerializer,
 )
+from .utils import generate_ticket_pdf
 
 
 class RegisterView(generics.CreateAPIView):
@@ -128,13 +129,24 @@ def book_ticket(request, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def download_ticket(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id, buyer=request.user, is_active=True)
-    if not ticket.qr_code:
-        return Response({"error": "QR code not available"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        ticket = Ticket.objects.select_related("event", "buyer").get(id=ticket_id, is_active=True)
+    except Ticket.DoesNotExist:
+        return Response({"error": "Ticket not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if ticket.buyer_id != request.user.id:
+        return Response({"error": "You are not authorized to download this ticket."}, status=status.HTTP_403_FORBIDDEN)
+
+    pdf_buffer = generate_ticket_pdf(ticket)
+
+    safe_event_name = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in ticket.event.title).strip("_")
+    filename = f"{safe_event_name or 'event'}_ticket_{ticket.id}.pdf"
+
     return FileResponse(
-        open(ticket.qr_code.path, "rb"),
+        pdf_buffer,
         as_attachment=True,
-        filename=f"{ticket.event.title}_ticket.png",
+        filename=filename,
+        content_type="application/pdf",
     )
 
 
@@ -217,5 +229,4 @@ def api_root(request):
             "tickets": "/api/tickets/",
         }
     )
-
 
