@@ -1,8 +1,11 @@
 from io import BytesIO
+       codex/fix-401-error-for-pdf-download
 from textwrap import wrap
 
+from uuid import uuid4
+       main
+
 import qrcode
-from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -26,6 +29,7 @@ from .serializer import (
     RegisterSerializer,
     TicketSerializer,
 )
+from .utils import build_ticket_invitation_pdf
 
 
 class RegisterView(generics.CreateAPIView):
@@ -132,11 +136,31 @@ def book_ticket(request, pk):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def download_ticket(request, ticket_id):
+       codex/fix-401-error-for-pdf-download
     ticket = get_object_or_404(
         Ticket.objects.select_related("event", "buyer"),
         id=ticket_id,
         is_active=True,
     )
+
+    ticket = Ticket.objects.select_related("event", "buyer").filter(id=ticket_id).first()
+
+    if not ticket:
+        return Response({"error": "Ticket not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if ticket.buyer_id != request.user.id:
+        return Response({"error": "You are not authorized to download this ticket."}, status=status.HTTP_403_FORBIDDEN)
+
+    if not ticket.is_active:
+        return Response({"error": "This ticket is no longer active."}, status=status.HTTP_400_BAD_REQUEST)
+
+    confirmation_id = f"TF-{ticket.id}-{uuid4().hex[:8].upper()}"
+    pdf_buffer = build_ticket_invitation_pdf(ticket, confirmation_id)
+
+    response = FileResponse(pdf_buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="ticket_{ticket.id}_invitation.pdf"'
+    return response
+         main
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="ticket_{ticket.id}.pdf"'
