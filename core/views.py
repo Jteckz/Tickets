@@ -1,10 +1,14 @@
 from io import BytesIO
+from textwrap import wrap
 
 import qrcode
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.http import FileResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -126,16 +130,63 @@ def book_ticket(request, pk):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def download_ticket(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id, buyer=request.user, is_active=True)
-    if not ticket.qr_code:
-        return Response({"error": "QR code not available"}, status=status.HTTP_400_BAD_REQUEST)
-    return FileResponse(
-        open(ticket.qr_code.path, "rb"),
-        as_attachment=True,
-        filename=f"{ticket.event.title}_ticket.png",
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("event", "buyer"),
+        id=ticket_id,
+        is_active=True,
     )
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="ticket_{ticket.id}.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    page_width, page_height = A4
+
+    pdf.setFont("Helvetica-Bold", 26)
+    pdf.drawCentredString(page_width / 2, page_height - 70, "EVENT TICKET")
+
+    y = page_height - 140
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(70, y, f"Event Name: {ticket.event.title}")
+    y -= 30
+
+    if ticket.event.date:
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(70, y, f"Event Date: {ticket.event.date.strftime('%Y-%m-%d %H:%M')}")
+        y -= 30
+
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(70, y, "Description:")
+    y -= 22
+
+    pdf.setFont("Helvetica", 12)
+    description = ticket.event.description or "No event description provided."
+    for line in wrap(description, width=90):
+        pdf.drawString(70, y, line)
+        y -= 18
+
+    y -= 12
+    holder_name = ticket.buyer.get_full_name() or ticket.buyer.username
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(70, y, f"Guest Name: {holder_name}")
+    y -= 32
+
+    ticket_code = f"TICKET-{ticket.id:04d}"
+    pdf.drawString(70, y, f"Ticket ID: {ticket_code}")
+
+    qr = qrcode.make(f"Ticket ID: {ticket.id}")
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    qr_size = 150
+    pdf.drawImage(ImageReader(buffer), 70, y - qr_size - 20, qr_size, qr_size)
+
+    pdf.showPage()
+    pdf.save()
+    return response
 
 
 @api_view(["POST"])
@@ -217,5 +268,4 @@ def api_root(request):
             "tickets": "/api/tickets/",
         }
     )
-
 
