@@ -50,6 +50,7 @@ class Event(models.Model):
     tickets_available = models.IntegerField(default=0)
     total_tickets = models.IntegerField(default=0)  # For progress bar
     is_hot = models.BooleanField(default=False)
+    image = models.ImageField(upload_to="event_images/", blank=True, null=True)
 
     provider = models.ForeignKey(
         User,
@@ -61,6 +62,11 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+    def delete(self, *args, **kwargs):
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
 
 # ---------------------------
 # Ticket Model

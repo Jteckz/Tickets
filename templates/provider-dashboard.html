@@ -25,6 +25,13 @@
           <input class="input-control" type="number" min="0" name="total_tickets" placeholder="Total" required />
           <input class="input-control" type="number" min="0" name="tickets_available" placeholder="Available" required />
         </div>
+        <label class="text-sm text-slate-300" for="event-image">Event image</label>
+        <input id="event-image" class="input-control" type="file" name="image" accept="image/*" />
+        <div id="current-image-wrap" class="hidden text-sm text-slate-300">
+          <p>Current image:</p>
+          <img id="current-image-preview" src="" alt="Current event image" class="mt-2 max-h-28 rounded-lg object-cover" />
+        </div>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="clear_image" /> Remove existing image</label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_hot" /> Mark as Hot Event</label>
         <button type="submit" class="btn-primary w-full">Save Event</button>
       </form>

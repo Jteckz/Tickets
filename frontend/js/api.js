@@ -5,9 +5,13 @@ async function request(endpoint, options = {}, shouldRetry = true) {
   const token = auth.getAccessToken();
 
   const headers = {
-    'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  const isFormData = options.body instanceof FormData;
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -36,8 +40,8 @@ async function request(endpoint, options = {}, shouldRetry = true) {
 
 export const api = {
   get: (endpoint) => request(endpoint),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
-  put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+  post: (endpoint, body) => request(endpoint, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body) }),
+  patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: body instanceof FormData ? body : JSON.stringify(body) }),
+  put: (endpoint, body) => request(endpoint, { method: 'PUT', body: body instanceof FormData ? body : JSON.stringify(body) }),
   delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
 };
