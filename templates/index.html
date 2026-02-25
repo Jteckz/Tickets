@@ -1,26 +1,62 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}TicketFlow | Premium Ticketing{% endblock %}
+{% block title %}TicketFlow | Book Extraordinary Events{% endblock %}
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'frontend/css/index.css' %}" />
+{% endblock %}
 {% block content %}
-<section class="mx-auto max-w-6xl">
-  <div class="glass fade-in p-8 md:p-12">
-    <p class="mb-2 text-sm text-blue-300">Premium Event Platform</p>
-    <h1 class="text-4xl font-bold md:text-6xl">Experience events with seamless digital ticketing.</h1>
-    <p class="mt-4 max-w-2xl text-slate-300">Book, manage, and validate tickets with modern security and elegant
-      workflows.</p>
-    <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/events/" class="btn-primary">Browse Events</a>
-      <a href="/login/" class="btn-secondary">Login</a>
-      <a href="/register/" class="btn-secondary">Register</a>
-    </div>
-  </div>
-</section>
+<div class="landing-page">
+  <header class="landing-header" aria-label="TicketFlow quick links">
+    <a href="#featured-events" class="quick-link">Events</a>
+    <a href="/tickets/" class="quick-link">My Tickets</a>
+    <a href="/login/" id="landing-auth-link" class="quick-link quick-link--accent">Login</a>
+  </header>
 
-<section class="mx-auto mt-10 max-w-6xl">
-  <h2 class="mb-4 text-2xl font-semibold">Featured Events</h2>
-  <div id="featured-events" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-</section>
+  <main class="landing-main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__content">
+        <p class="hero__eyebrow">Premium Event Discovery</p>
+        <h1 id="hero-title">Find sold-out-worthy events and book in seconds.</h1>
+        <p class="hero__subtitle">From electric concerts to unforgettable community nights, TicketFlow makes discovery, checkout, and ticket access beautifully effortless.</p>
+        <div class="hero__actions">
+          <a href="#featured-events" class="hero-btn hero-btn--primary">Start Exploring</a>
+          <a href="/events/" class="hero-btn hero-btn--ghost">View All Events</a>
+        </div>
+      </div>
+
+      <div class="hero__visual" aria-label="Featured event moments slider">
+        <div class="hero-slide is-active" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1200&q=80');">
+          <p>Immersive Live Concerts</p>
+        </div>
+        <div class="hero-slide" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80');">
+          <p>Stadium Energy</p>
+        </div>
+        <div class="hero-slide" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80');">
+          <p>Nightlife Experiences</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="featured-events" class="events" aria-labelledby="featured-events-title">
+      <div class="section-head">
+        <h2 id="featured-events-title">Featured Events</h2>
+        <p>Fresh picks from the TicketFlow catalog.</p>
+      </div>
+      <div id="events-grid" class="events-grid" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <a href="/events/">Events</a>
+    <a href="/tickets/">My Tickets</a>
+    <a href="/login/">Account</a>
+    <p>© {% now "Y" %} TicketFlow. Crafted for unforgettable nights.</p>
+  </footer>
+</div>
 {% endblock %}
 {% block scripts %}
-<script type="module" src="{% static 'frontend/js/landing.js' %}"></script>
+<script type="module" src="{% static 'frontend/js/index.js' %}"></script>
 {% endblock %}
