@@ -204,6 +204,7 @@ def provider_dashboard_data(request):
             "tickets_available": ev.tickets_available,
             "total_tickets": ev.total_tickets,
             "is_hot": ev.is_hot,
+            "image": ev.image.url if ev.image else "",
         }
         for ev in events
     ]

@@ -33,6 +33,7 @@ class EventSerializer(serializers.ModelSerializer):
             "tickets_available",
             "total_tickets",
             "is_hot",
+            "image",
             "provider",
             "sold_tickets",
         ]
