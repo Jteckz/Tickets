@@ -4,46 +4,71 @@
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'frontend/css/index.css' %}" />
 {% endblock %}
 {% block content %}
 <div class="landing-page">
-  <header class="landing-header" aria-label="TicketFlow quick links">
-    <a href="#featured-events" class="quick-link">Events</a>
-    <a href="/tickets/" class="quick-link">My Tickets</a>
-    <a href="/login/" id="landing-auth-link" class="quick-link quick-link--accent">Login</a>
+  <header class="landing-header" aria-label="Main navigation">
+    <a href="/" class="brand" aria-label="TicketFlow home">
+      <span class="brand__mark" aria-hidden="true">TF</span>
+      <span class="brand__text">TicketFlow</span>
+    </a>
+
+    <nav class="landing-nav" aria-label="Primary">
+      <a href="#featured-events" class="quick-link">Events</a>
+      <a href="/tickets/" class="quick-link">My Tickets</a>
+      <a href="/login/" id="landing-auth-link" class="quick-link quick-link--accent">Login</a>
+    </nav>
   </header>
 
   <main class="landing-main">
     <section class="hero" aria-labelledby="hero-title">
-      <div class="hero__content">
-        <p class="hero__eyebrow">Premium Event Discovery</p>
-        <h1 id="hero-title">Find sold-out-worthy events and book in seconds.</h1>
-        <p class="hero__subtitle">From electric concerts to unforgettable community nights, TicketFlow makes discovery, checkout, and ticket access beautifully effortless.</p>
+      <div class="hero__content glass">
+        <p class="hero__eyebrow">Discover. Book. Experience.</p>
+        <h1 id="hero-title">Your next unforgettable night starts on TicketFlow.</h1>
+        <p class="hero__subtitle">Find curated live concerts, exclusive events, and trending city experiences in one premium booking flow. Secure your seat in seconds.</p>
         <div class="hero__actions">
           <a href="#featured-events" class="hero-btn hero-btn--primary">Start Exploring</a>
           <a href="/events/" class="hero-btn hero-btn--ghost">View All Events</a>
         </div>
+
+        <div class="hero-stats" aria-label="TicketFlow highlights">
+          <article class="stat-pill">
+            <strong>50K+</strong>
+            <span>Tickets booked</span>
+          </article>
+          <article class="stat-pill">
+            <strong>Top Venues</strong>
+            <span>Across your city</span>
+          </article>
+          <article class="stat-pill">
+            <strong>Instant QR</strong>
+            <span>Checkout experience</span>
+          </article>
+        </div>
       </div>
 
-      <div class="hero__visual" aria-label="Featured event moments slider">
-        <div class="hero-slide is-active" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1200&q=80');">
-          <p>Immersive Live Concerts</p>
+      <div class="hero__visual glass" aria-label="Featured event highlights slider">
+        <div class="hero-slide is-active" style="background-image: linear-gradient(150deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.78)), url('https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1400&q=80');">
+          <p>Immersive live concerts</p>
         </div>
-        <div class="hero-slide" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80');">
-          <p>Stadium Energy</p>
+        <div class="hero-slide" style="background-image: linear-gradient(150deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.78)), url('https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1400&q=80');">
+          <p>Festival-level energy</p>
         </div>
-        <div class="hero-slide" style="background-image: linear-gradient(140deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.72)), url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80');">
-          <p>Nightlife Experiences</p>
+        <div class="hero-slide" style="background-image: linear-gradient(150deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.78)), url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1400&q=80');">
+          <p>Nightlife experiences</p>
         </div>
       </div>
     </section>
 
-    <section id="featured-events" class="events" aria-labelledby="featured-events-title">
+    <section id="featured-events" class="events glass" aria-labelledby="featured-events-title">
       <div class="section-head">
-        <h2 id="featured-events-title">Featured Events</h2>
-        <p>Fresh picks from the TicketFlow catalog.</p>
+        <div>
+          <p class="section-head__eyebrow">Featured now</p>
+          <h2 id="featured-events-title">Curated events to book today</h2>
+        </div>
+        <a class="section-head__link" href="/events/">See all events</a>
       </div>
       <div id="events-grid" class="events-grid" aria-live="polite"></div>
     </section>
@@ -53,7 +78,7 @@
     <a href="/events/">Events</a>
     <a href="/tickets/">My Tickets</a>
     <a href="/login/">Account</a>
-    <p>© {% now "Y" %} TicketFlow. Crafted for unforgettable nights.</p>
+    <p>© {% now "Y" %} TicketFlow. Designed for unforgettable moments.</p>
   </footer>
 </div>
 {% endblock %}
