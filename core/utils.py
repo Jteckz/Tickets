@@ -2,9 +2,11 @@ from io import BytesIO
 
 import qrcode
 from django.core.files import File
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
+
 
 def generate_ticket_qr(ticket):
     url = f"http://127.0.0.1:8000/api/tickets/{ticket.id}/"
@@ -18,6 +20,7 @@ def generate_ticket_qr(ticket):
         File(buffer),
         save=False
     )
+
 
 def generate_invitation_qr(invitation):
     url = f"http://127.0.0.1:8000/invitations/download/{invitation.uuid}/"
@@ -33,80 +36,114 @@ def generate_invitation_qr(invitation):
     )
 
 
+def _draw_wrapped_text(pdf, text, x, y, max_width, line_height=14, font_name="Helvetica", font_size=11):
+    pdf.setFont(font_name, font_size)
+    lines = []
+    for paragraph in text.splitlines() or [text]:
+        words = paragraph.split()
+        if not words:
+            lines.append("")
+            continue
+
+        current = words[0]
+        for word in words[1:]:
+            candidate = f"{current} {word}"
+            if pdf.stringWidth(candidate, font_name, font_size) <= max_width:
+                current = candidate
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+
+    cursor = y
+    for line in lines:
+        pdf.drawString(x, cursor, line)
+        cursor -= line_height
+
+    return cursor
+
+
 def generate_ticket_pdf(ticket):
-    buffer = BytesIO()
     confirmation_id = f"TKT-{ticket.id:06d}-{ticket.created_at.strftime('%Y%m%d')}"
-    qr = qrcode.make(confirmation_id)
-    qr_buffer = BytesIO()
-    qr.save(qr_buffer, format="PNG")
-    qr_buffer.seek(0)
-
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 80, "EVENT INVITATION")
-
-    p.setFont("Helvetica", 12)
-    p.drawString(50, height - 120, f"Event: {ticket.event.title}")
-    p.drawString(50, height - 145, "Description:")
-
-    text = p.beginText(50, height - 165)
-    text.setFont("Helvetica", 11)
-    description = (ticket.event.description or "No event description available.").strip()
-    for line in description.splitlines() or [description]:
-        text.textLine(line)
-    p.drawText(text)
-
-    p.setFont("Helvetica-Bold", 11)
-    p.drawString(50, 120, f"Confirmation ID: {confirmation_id}")
-    p.drawImage(ImageReader(qr_buffer), width - 170, 50, width=120, height=120)
-
-    p.showPage()
-    p.save()
-
-    buffer.seek(0)
-    return buffer    
+    return build_ticket_invitation_pdf(ticket, confirmation_id)
 
 
 def build_ticket_invitation_pdf(ticket, confirmation_id):
     """Create a downloadable invitation-style PDF for a ticket."""
     buffer = BytesIO()
-    qr_payload = f"confirmation:{confirmation_id}"
+    verification_payload = f"ticket:{ticket.id}"
 
-    qr_image = qrcode.make(qr_payload)
+    qr_image = qrcode.make(verification_payload)
     qr_buffer = BytesIO()
     qr_image.save(qr_buffer, format="PNG")
     qr_buffer.seek(0)
 
-    pdf = canvas.Canvas(buffer)
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
     pdf.setTitle(f"Ticket Invitation {ticket.id}")
 
-    pdf.setFont("Helvetica-Bold", 22)
-    pdf.drawString(60, 790, "TicketFlow Invitation")
+    # dark themed background panel
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.rect(0, 0, width, height, stroke=0, fill=1)
 
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(60, 748, "Event")
-    pdf.setFont("Helvetica", 13)
-    pdf.drawString(60, 728, ticket.event.title)
+    # glass card
+    card_x, card_y = 40, 50
+    card_w, card_h = width - 80, height - 100
+    pdf.setFillColor(colors.HexColor("#1e293b"))
+    pdf.roundRect(card_x, card_y, card_w, card_h, 18, stroke=0, fill=1)
 
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(60, 690, "Description")
+    pdf.setStrokeColor(colors.HexColor("#38bdf8"))
+    pdf.setLineWidth(1.2)
+    pdf.roundRect(card_x, card_y, card_w, card_h, 18, stroke=1, fill=0)
+
+    pdf.setFillColor(colors.HexColor("#e2e8f0"))
+    pdf.setFont("Helvetica-Bold", 24)
+    pdf.drawString(card_x + 28, height - 110, "TicketFlow Invitation")
+
+    pdf.setFillColor(colors.HexColor("#bae6fd"))
     pdf.setFont("Helvetica", 12)
-    description = ticket.event.description or "No description provided."
-    text = pdf.beginText(60, 670)
-    text.setLeading(16)
-    for line in description.splitlines() or [description]:
-        text.textLine(line)
-    pdf.drawText(text)
+    pdf.drawString(card_x + 28, height - 135, "Welcome to the event! We're excited to have you.")
+
+    # event metadata
+    top = height - 180
+    pdf.setFillColor(colors.HexColor("#f8fafc"))
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(card_x + 28, top, "Event")
+    pdf.setFont("Helvetica", 13)
+    pdf.drawString(card_x + 28, top - 20, ticket.event.title)
 
     pdf.setFont("Helvetica-Bold", 12)
-    pdf.drawString(60, 110, f"Confirmation ID: {confirmation_id}")
-    pdf.drawImage(ImageReader(qr_buffer), 430, 55, width=120, height=120, preserveAspectRatio=True, mask="auto")
+    pdf.drawString(card_x + 28, top - 50, "Venue")
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(card_x + 28, top - 68, ticket.event.venue or "TBA")
+
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(card_x + 28, top - 95, "Date")
+    pdf.setFont("Helvetica", 11)
+    event_date = ticket.event.date.strftime("%A, %d %B %Y at %I:%M %p") if ticket.event.date else "TBA"
+    pdf.drawString(card_x + 28, top - 113, event_date)
+
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(card_x + 28, top - 145, "Message")
+    description = (ticket.event.description or "Get ready for an amazing event experience with TicketFlow.").strip()
+    _draw_wrapped_text(pdf, description, card_x + 28, top - 163, 320, line_height=15, font_name="Helvetica", font_size=11)
+
+    # right-side qr and identifiers
+    qr_x = width - 220
+    qr_y = card_y + 130
+    pdf.setFillColor(colors.HexColor("#f8fafc"))
+    pdf.roundRect(qr_x - 10, qr_y - 10, 160, 160, 12, stroke=0, fill=1)
+    pdf.drawImage(ImageReader(qr_buffer), qr_x, qr_y, width=140, height=140, preserveAspectRatio=True, mask="auto")
+
+    pdf.setFillColor(colors.HexColor("#cbd5e1"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(qr_x - 10, qr_y - 28, f"Confirmation: {confirmation_id}")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(qr_x - 10, qr_y - 44, "QR encodes: ticket:<ticket_id>")
+    pdf.drawString(qr_x - 10, qr_y - 58, f"ticket:{ticket.id}")
 
     pdf.showPage()
     pdf.save()
 
     buffer.seek(0)
     return buffer
-

@@ -38,10 +38,38 @@ async function request(endpoint, options = {}, shouldRetry = true) {
   return data;
 }
 
+async function requestBlob(endpoint, options = {}, shouldRetry = true) {
+  const token = auth.getAccessToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401 && shouldRetry) {
+    const newToken = await auth.refreshToken();
+    if (newToken) return requestBlob(endpoint, options, false);
+    auth.logout();
+    throw new Error('Your session has expired. Please login again.');
+  }
+
+  if (!response.ok) {
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    const data = isJson ? await response.json() : null;
+    throw new Error(data?.detail || data?.error || 'Request failed.');
+  }
+
+  const blob = await response.blob();
+  return { blob, headers: response.headers };
+}
+
 export const api = {
   get: (endpoint) => request(endpoint),
   post: (endpoint, body) => request(endpoint, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body) }),
   patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: body instanceof FormData ? body : JSON.stringify(body) }),
   put: (endpoint, body) => request(endpoint, { method: 'PUT', body: body instanceof FormData ? body : JSON.stringify(body) }),
   delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+  download: (endpoint) => requestBlob(endpoint),
 };
