@@ -4,12 +4,21 @@ import { renderNavbar } from './ui.js';
 
 function formatDate(value) {
   if (!value) return 'Date to be announced';
-  return new Date(value).toLocaleDateString(undefined, {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Date to be announced';
+
+  return date.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value ?? '';
+  return div.innerHTML;
 }
 
 function getSessionToken() {
@@ -23,6 +32,7 @@ function updateAuthLink() {
   const isLoggedIn = Boolean(getSessionToken());
   authLink.textContent = isLoggedIn ? 'Logout' : 'Login';
   authLink.href = isLoggedIn ? '#' : '/login/';
+
   if (isLoggedIn) {
     authLink.addEventListener('click', (event) => {
       event.preventDefault();
@@ -56,7 +66,21 @@ function startHeroSlider() {
     slides[activeIndex].classList.remove('is-active');
     activeIndex = (activeIndex + 1) % slides.length;
     slides[activeIndex].classList.add('is-active');
-  }, 3800);
+  }, 4200);
+}
+
+function createEventCardMarkup(item) {
+  const title = escapeHtml(item.title || 'Untitled Event');
+  const venue = escapeHtml(item.venue || 'Venue to be announced');
+
+  return `
+    <article class="event-card">
+      <h3>${title}</h3>
+      <p class="event-meta">${formatDate(item.date)}</p>
+      <p class="event-meta">${venue}</p>
+      <button class="book-btn" type="button" data-event-id="${item.id}">Book Now</button>
+    </article>
+  `;
 }
 
 function renderEvents(events) {
@@ -68,19 +92,7 @@ function renderEvents(events) {
     return;
   }
 
-  grid.innerHTML = events
-    .slice(0, 6)
-    .map(
-      (item) => `
-      <article class="event-card">
-        <h3>${item.title}</h3>
-        <p class="event-meta">${formatDate(item.date)}</p>
-        <p class="event-meta">${item.venue || 'Venue to be announced'}</p>
-        <button class="book-btn" data-event-id="${item.id}">Book Now</button>
-      </article>
-    `
-    )
-    .join('');
+  grid.innerHTML = events.slice(0, 6).map(createEventCardMarkup).join('');
 
   grid.querySelectorAll('.book-btn').forEach((button) => {
     button.addEventListener('click', () => handleBook(button.dataset.eventId));
@@ -92,11 +104,12 @@ async function loadEvents() {
   if (!grid) return;
 
   grid.innerHTML = '<p class="event-empty">Loading featured events...</p>';
+
   try {
     const events = await api.get('/events/');
     renderEvents(Array.isArray(events) ? events : []);
   } catch {
-    grid.innerHTML = '<p class="event-empty">Unable to load events right now.</p>';
+    grid.innerHTML = '<p class="event-empty">Unable to load events right now. Please try again shortly.</p>';
   }
 }
 
