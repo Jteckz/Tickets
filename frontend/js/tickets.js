@@ -12,6 +12,33 @@ function closeModal() {
   document.getElementById('qr-modal').classList.add('hidden');
 }
 
+function getFileName(headers, fallback) {
+  const disposition = headers.get('content-disposition') || '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1]);
+
+  const plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallback;
+}
+
+async function handleDownload(ticketId) {
+  try {
+    const { blob, headers } = await api.download(`/tickets/download/${ticketId}/`);
+    const fileName = getFileName(headers, `ticket_${ticketId}.pdf`);
+
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    showMessage('tickets-message', error.message);
+  }
+}
+
 async function loadTickets() {
   const user = requireAuth();
   if (!user) return;
@@ -37,7 +64,7 @@ async function loadTickets() {
         <p class="mt-2 text-slate-300">${ticket.event.venue} · ${new Date(ticket.event.date).toLocaleString()}</p>
         <div class="mt-4 flex gap-3">
           <button class="btn-secondary qr-btn" data-title="${ticket.event.title}" data-src="${ticket.qr_code}">View QR</button>
-          <a class="btn-primary" href="/api/tickets/download/${ticket.id}/">Download</a>
+          <button class="btn-primary download-btn" data-ticket-id="${ticket.id}">Download</button>
         </div>
       </article>
     `
@@ -46,6 +73,10 @@ async function loadTickets() {
 
     document.querySelectorAll('.qr-btn').forEach((button) => {
       button.addEventListener('click', () => openModal(button.dataset.src, button.dataset.title));
+    });
+
+    document.querySelectorAll('.download-btn').forEach((button) => {
+      button.addEventListener('click', () => handleDownload(button.dataset.ticketId));
     });
   } catch (error) {
     showMessage('tickets-message', error.message);
