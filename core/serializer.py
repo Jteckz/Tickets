@@ -46,6 +46,8 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventCreateUpdateSerializer(EventSerializer):
+    clear_image = serializers.BooleanField(write_only=True, required=False, default=False)
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
@@ -67,7 +69,14 @@ class EventCreateUpdateSerializer(EventSerializer):
 
         return attrs
 
+    def update(self, instance, validated_data):
+        clear_image = validated_data.pop("clear_image", False)
+        if clear_image and "image" not in validated_data:
+            instance.image = None
+        return super().update(instance, validated_data)
+
     class Meta(EventSerializer.Meta):
+        fields = EventSerializer.Meta.fields + ["clear_image"]
         read_only_fields = ["provider", "sold_tickets"]
 
 

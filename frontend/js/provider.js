@@ -160,7 +160,7 @@ async function submitEventForm(event) {
   if (imageFile) {
     formData.append('image', imageFile);
   } else if (form.elements.namedItem('clear_image')?.checked) {
-    formData.append('image', '');
+    formData.append('clear_image', 'true');
   }
 
   const eventId = form.elements.namedItem('event_id')?.value || '';

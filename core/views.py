@@ -1,6 +1,4 @@
 from io import BytesIO
-from uuid import uuid4
-
 import qrcode
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, JsonResponse, FileResponse
@@ -82,7 +80,11 @@ class EventViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         if serializer.instance.provider != self.request.user:
             raise PermissionDenied("You can only update your own events.")
-        serializer.save()
+        old_image = serializer.instance.image
+        updated_event = serializer.save()
+
+        if old_image and old_image.name and old_image.name != getattr(updated_event.image, "name", None):
+            old_image.delete(save=False)
 
     def perform_destroy(self, instance):
         if instance.provider != self.request.user:
@@ -138,8 +140,9 @@ def download_ticket(request, ticket_id):
         return Response({"error": "You are not authorized to download this ticket."}, status=status.HTTP_403_FORBIDDEN)
 
     pdf_buffer = generate_ticket_pdf(ticket)
-
-    safe_event_name = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in ticket.event.title).strip("_")
+    safe_event_name = "".join(
+        ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in ticket.event.title
+    ).strip("_")
     filename = f"{safe_event_name or 'event'}_ticket_{ticket.id}.pdf"
 
     return FileResponse(
@@ -147,23 +150,7 @@ def download_ticket(request, ticket_id):
         as_attachment=True,
         filename=filename,
         content_type="application/pdf",
-
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("event", "buyer"),
-        id=ticket_id,
-        is_active=True,
-
     )
-
-    if ticket.buyer_id != request.user.id:
-        return Response({"error": "You are not authorized to download this ticket."}, status=status.HTTP_403_FORBIDDEN)
-
-    confirmation_id = f"TF-{ticket.id}-{uuid4().hex[:8].upper()}"
-    pdf_buffer = build_ticket_invitation_pdf(ticket, confirmation_id)
-
-    response = FileResponse(pdf_buffer, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="ticket_{ticket.id}_invitation.pdf"'
-    return response
 
 
 
@@ -247,4 +234,3 @@ def api_root(request):
             "tickets": "/api/tickets/",
         }
     )
-
