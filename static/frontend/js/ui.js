@@ -1,5 +1,16 @@
 import { auth } from './auth.js';
 
+const roleHomePaths = {
+  provider: '/provider-dashboard/',
+  customer: '/dashboard/',
+  staff: '/scanner/',
+  admin: '/dashboard/',
+};
+
+export function getRoleHomePath(role) {
+  return roleHomePaths[role] || '/dashboard/';
+}
+
 export function showMessage(elementId, message, type = 'error') {
   const el = document.getElementById(elementId);
   if (!el) return;
@@ -71,12 +82,17 @@ export function renderNavbar() {
 export function requireAuth(roles = []) {
   const user = auth.getUser();
   if (!auth.isAuthenticated() || !user) {
-    window.location.href = '/login/';
+    if (window.location.pathname !== '/login/') {
+      window.location.href = '/login/';
+    }
     return null;
   }
 
   if (roles.length && !roles.includes(user.role)) {
-    window.location.href = '/dashboard/';
+    const targetPath = getRoleHomePath(user.role);
+    if (window.location.pathname !== targetPath) {
+      window.location.href = targetPath;
+    }
     return null;
   }
 

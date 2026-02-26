@@ -1,5 +1,5 @@
 import { auth } from './auth.js';
-import { renderNavbar, showMessage, clearMessage } from './ui.js';
+import { renderNavbar, showMessage, clearMessage, getRoleHomePath } from './ui.js';
 
 function validatePassword(password) {
   return password && password.length >= 6;
@@ -26,8 +26,8 @@ if (loginForm) {
     submitBtn.textContent = 'Logging in...';
 
     try {
-      await auth.login(payload);
-      window.location.href = '/dashboard/';
+      const session = await auth.login(payload);
+      window.location.href = getRoleHomePath(session?.user?.role);
     } catch (error) {
       showMessage('auth-message', error.message);
     } finally {
@@ -62,8 +62,8 @@ if (registerForm) {
 
     try {
       await auth.register(payload);
-      await auth.login({ username: payload.username, password: payload.password });
-      window.location.href = '/dashboard/';
+      const session = await auth.login({ username: payload.username, password: payload.password });
+      window.location.href = getRoleHomePath(session?.user?.role);
     } catch (error) {
       showMessage('auth-message', error.message);
     } finally {
