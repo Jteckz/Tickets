@@ -1,9 +1,9 @@
 from io import BytesIO
+from uuid import uuid4
 
 import qrcode
-from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.http import FileResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -147,7 +147,24 @@ def download_ticket(request, ticket_id):
         as_attachment=True,
         filename=filename,
         content_type="application/pdf",
+
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("event", "buyer"),
+        id=ticket_id,
+        is_active=True,
+
     )
+
+    if ticket.buyer_id != request.user.id:
+        return Response({"error": "You are not authorized to download this ticket."}, status=status.HTTP_403_FORBIDDEN)
+
+    confirmation_id = f"TF-{ticket.id}-{uuid4().hex[:8].upper()}"
+    pdf_buffer = build_ticket_invitation_pdf(ticket, confirmation_id)
+
+    response = FileResponse(pdf_buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="ticket_{ticket.id}_invitation.pdf"'
+    return response
+
 
 
 @api_view(["POST"])

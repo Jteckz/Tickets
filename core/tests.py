@@ -108,6 +108,7 @@ class TicketPlatformApiTests(APITestCase):
         booking = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
         ticket_id = booking.data["id"]
 
+        self.client.force_authenticate(user=None)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket_id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response["Content-Type"], "application/pdf")
@@ -121,11 +122,33 @@ class TicketPlatformApiTests(APITestCase):
             price=100,
             payment_confirmed=True,
             is_active=True,
+    
+        codex/fix-401-error-for-pdf-download
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn('attachment; filename="ticket_', response["Content-Disposition"])
+
+        self.assertIn("application/pdf", response["Content-Type"])
+
+
+    def test_download_ticket_requires_authentication(self):
+        ticket = Ticket.objects.create(
+            event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True
+        )
+
+        response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket.id}))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_customer_cannot_download_other_users_ticket(self):
+        other_customer = User.objects.create_user(username="other_customer", password="pass1234", role="customer")
+        ticket = Ticket.objects.create(
+            event=self.event, buyer=other_customer, price=100, payment_confirmed=True, is_active=True
+         
         )
 
         self.client.force_authenticate(self.customer)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket.id}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
     def test_only_staff_can_verify_ticket(self):
         ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
@@ -213,6 +236,7 @@ class TicketPlatformApiTests(APITestCase):
         booking = self.client.post(reverse("book-ticket", kwargs={"pk": self.event.id}), {}, format="json")
         ticket_id = booking.data["id"]
 
+        self.client.force_authenticate(user=None)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket_id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response["Content-Type"], "application/pdf")
@@ -231,6 +255,14 @@ class TicketPlatformApiTests(APITestCase):
         self.client.force_authenticate(self.customer)
         response = self.client.get(reverse("download-ticket", kwargs={"ticket_id": ticket.id}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        codex/fix-401-error-for-pdf-download
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn('attachment; filename="ticket_', response["Content-Disposition"])
+
+        self.assertIn("application/pdf", response["Content-Type"])
+        main
+
 
     def test_only_staff_can_verify_ticket(self):
         ticket = Ticket.objects.create(event=self.event, buyer=self.customer, price=100, payment_confirmed=True, is_active=True)
