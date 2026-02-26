@@ -109,4 +109,4 @@ def build_ticket_invitation_pdf(ticket, confirmation_id):
 
     buffer.seek(0)
     return buffer
->>>>>>> main
+
